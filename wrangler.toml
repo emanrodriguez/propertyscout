@@ -1,0 +1,9 @@
+name = "propertyscout"
+main = "src/index.js"
+compatibility_date = "2023-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Environment variables will be set via CLI or dashboard
+SUPABASE_URL = "https://jnyfqxxtdoaktmhibifk.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpueWZxeHh0ZG9ha3RtaGliaWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDA1NDUsImV4cCI6MjA3Mzg3NjU0NX0.VqmUAy_gDcr9fcTDpgYB_n-L_nHAGxI3AR1ECd47erY"
