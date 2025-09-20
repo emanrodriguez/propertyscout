@@ -325,7 +325,7 @@ body {
 .main-layout {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar {
@@ -478,7 +478,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .page-header {
@@ -826,9 +826,7 @@ body {
   z-index: 10;
 }
 
-/* Ensure parent containers don't clip the dropdown */
-.main-content,
-.content,
+/* Ensure dropdown containers don't clip the dropdown */
 .leads-container,
 .leads-table,
 .leads-table tbody,
@@ -1520,6 +1518,14 @@ body {
     gap: 16px;
     padding: 16px;
     background: none;
+  }
+
+  .listing-card .card-address{
+    font-size: 14px;
+  }
+
+  .card-street {
+    font-size: 14px;
   }
   .content {
     width: 100%;

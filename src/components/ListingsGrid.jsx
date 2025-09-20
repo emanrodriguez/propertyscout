@@ -143,13 +143,10 @@ const ListingsGrid = ({
                 }}
               >
                 {lead.property?.street_address && (
-                  <div className="card-street" style={{ fontWeight: 500 }}>
-                    {lead.property.street_address}
+                  <div className="card-street" style={{ color: "#555" }}>
+                    {lead.property.street_address} {lead.property?.city}, {lead.property?.state} {lead.property?.zipcode}
                   </div>
                 )}
-                <div className="card-city-state" style={{ color: "#555" }}>
-                  {lead.property?.city}, {lead.property?.state} {lead.property?.zipcode}
-                </div>
               </div>
             </div>
 

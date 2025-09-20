@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { getAllStatusOptions, setPropertyLeadStatus, safeAPICall } from '../lib/supabase'
+import { getLeadTransitionsBatch, setPropertyLeadStatus, safeAPICall } from '../lib/supabase'
+import { useStatusTransitions } from '../contexts/StatusTransitionsContext'
 
-// Cache for status options - key: status, value: { data, timestamp }
-const statusOptionsCache = new Map()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+// No longer using local cache - using StatusTransitionsContext instead
 
 const StatusDropdown = ({ lead, onStatusUpdate }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -16,13 +15,25 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
   const dropdownRef = useRef(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
   const [modalReady, setModalReady] = useState(false)
+  const { getTransitionsForLead, isLeadLoading } = useStatusTransitions()
 
-  // Load all status options when component mounts or status changes
+  // Load all status options when component mounts or lead ID changes
   useEffect(() => {
-    if (lead?.status) {
+    if (lead?.id) {
       loadStatusOptions()
     }
-  }, [lead?.status])
+  }, [lead?.id, getTransitionsForLead])
+
+  // Listen for when batch loading completes for this lead
+  useEffect(() => {
+    if (lead?.id && !isLeadLoading(lead.id)) {
+      const transitions = getTransitionsForLead(lead.id)
+      if (transitions && statusOptions.length === 0) {
+        console.log('StatusDropdown: Batch completed for lead', lead.id, 'updating options')
+        loadStatusOptions()
+      }
+    }
+  }, [lead?.id, isLeadLoading, getTransitionsForLead, statusOptions.length])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -81,61 +92,88 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
     }
   }
 
-  const loadStatusOptions = async () => {
-    if (!lead?.status) return
+  const loadStatusOptions = () => {
+    if (!lead?.id) return
 
-    // Check cache first
-    const cacheKey = lead.status
-    const cached = statusOptionsCache.get(cacheKey)
-    const now = Date.now()
+    console.log('StatusDropdown: Loading options for lead', lead.id)
 
-    if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-      // Use cached data
-      setStatusOptions(cached.data)
+    // Get transitions from context (they should already be loaded by PropertyLeads)
+    const transitions = getTransitionsForLead(lead.id)
+    const isLoading = isLeadLoading(lead.id)
 
-      // Set the suggested status (first valid transition with highest weight)
-      const validTransitions = cached.data.filter(option => option.isValid)
-      if (validTransitions.length > 0) {
-        setSuggestedStatus(validTransitions[0].to_status)
-        setSuggestionWeight(validTransitions[0].weight)
+    if (transitions && transitions.length > 0) {
+      console.log('StatusDropdown: Using batch data for lead', lead.id, 'transitions:', transitions)
+
+      // Convert the transitions format to match the expected format
+      const options = transitions.map(transition => ({
+        to_status: transition.to_status,
+        weight: transition.weight,
+        description: transition.description,
+        isValid: true // All transitions from the batch call are valid
+      }))
+
+      console.log('StatusDropdown: Converted options for lead', lead.id, ':', options)
+      setStatusOptions(options)
+      setLoading(false) // Clear loading state since we have data
+
+      // Set the suggested status (first transition with highest weight)
+      if (options.length > 0) {
+        setSuggestedStatus(options[0].to_status)
+        setSuggestionWeight(options[0].weight)
       } else {
         setSuggestedStatus(null)
         setSuggestionWeight(null)
       }
-      return
+    } else if (isLoading) {
+      console.log('StatusDropdown: Lead', lead.id, 'is currently loading in batch, waiting...')
+      // Don't fall back yet - the batch is loading
+      setLoading(true)
+      setStatusOptions([])
+    } else {
+      console.log('StatusDropdown: No batch data found for lead', lead.id, 'and not loading, falling back to individual batch call')
+      // Fallback to individual batch call if context data is not available and not loading
+      loadStatusOptionsFallback()
     }
+  }
 
+  const loadStatusOptionsFallback = async () => {
+    if (!lead?.id) return
+
+    console.log('StatusDropdown: Using fallback batch call for single lead', lead.id)
     setLoading(true)
     try {
-      const secureGetStatusOptions = safeAPICall(getAllStatusOptions, 'StatusDropdown.getAllStatusOptions')
-      const result = await secureGetStatusOptions(lead.status)
+      const secureGetTransitionsBatch = safeAPICall(getLeadTransitionsBatch, 'StatusDropdown.fallbackBatch')
+      const result = await secureGetTransitionsBatch([lead.id])
 
-      if (result.success) {
-        // Cache the result
-        statusOptionsCache.set(cacheKey, {
-          data: result.data,
-          timestamp: now
-        })
+      if (result.success && result.data[lead.id]) {
+        console.log('StatusDropdown: Fallback batch data received', result.data[lead.id])
 
-        setStatusOptions(result.data)
+        const transitions = result.data[lead.id]
+        const options = transitions.map(transition => ({
+          to_status: transition.to_status,
+          weight: transition.weight,
+          description: transition.description,
+          isValid: true
+        }))
 
-        // Set the suggested status (first valid transition with highest weight)
-        const validTransitions = result.data.filter(option => option.isValid)
-        if (validTransitions.length > 0) {
-          setSuggestedStatus(validTransitions[0].to_status)
-          setSuggestionWeight(validTransitions[0].weight)
+        setStatusOptions(options)
+
+        // Set the suggested status (first transition with highest weight)
+        if (options.length > 0) {
+          setSuggestedStatus(options[0].to_status)
+          setSuggestionWeight(options[0].weight)
         } else {
           setSuggestedStatus(null)
           setSuggestionWeight(null)
         }
       } else {
-        console.error('Failed to load status options:', result.error)
+        console.error('Failed to load status options via fallback:', result.error)
         setStatusOptions([])
         setSuggestedStatus(null)
         setSuggestionWeight(null)
       }
     } catch (error) {
-      console.error('Error loading status options:', error)
+      console.error('Error loading status options via fallback:', error)
       setStatusOptions([])
     } finally {
       setLoading(false)
@@ -153,10 +191,6 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
       if (result.success) {
         // The RPC returns a JSON response, check if it was successful
         if (result.data.success) {
-          // Invalidate cache for both old and new status
-          statusOptionsCache.delete(lead.status)
-          statusOptionsCache.delete(newStatus)
-
           // Notify parent component of the status change
           if (onStatusUpdate) {
             onStatusUpdate(lead.id, newStatus)

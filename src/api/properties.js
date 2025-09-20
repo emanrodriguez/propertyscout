@@ -344,6 +344,32 @@ const _getAllStatusOptions = async (user, currentStatus) => {
   }
 }
 
+/**
+ * Internal function to get status transitions for multiple leads in a single call
+ * @param {Object} user - Authenticated user object
+ * @param {Array<string>} leadIds - Array of lead IDs to get transitions for
+ * @returns {Promise<Object>} Object with lead IDs as keys and transition arrays as values
+ */
+const _getLeadTransitionsBatch = async (user, leadIds) => {
+  // Validate inputs
+  const validLeadIds = leadIds.map(id => validateInput.uuid(id, true))
+
+  try {
+    const { data, error } = await supabase.rpc('get_lead_transitions_batch', {
+      p_lead_ids: validLeadIds
+    })
+
+    if (error) {
+      throw new Error(`Failed to fetch lead transitions batch: ${error.message}`)
+    }
+
+    return data || {}
+  } catch (error) {
+    console.error('Error in _getLeadTransitionsBatch:', error)
+    throw error
+  }
+}
+
 // Mock data for development
 const getMockPropertyLeads = (status) => {
   const mockLeads = [
@@ -457,6 +483,7 @@ export const getLeadsWithSuggestions = withAuth(withRateLimit(_getLeadsWithSugge
 export const getValidTransitions = withAuth(withRateLimit(_getValidTransitions, { maxRequests: 100, windowMs: 60000 }))
 export const setPropertyLeadStatus = withAuth(withRateLimit(_setPropertyLeadStatus, { maxRequests: 30, windowMs: 60000 }))
 export const getAllStatusOptions = withAuth(withRateLimit(_getAllStatusOptions, { maxRequests: 100, windowMs: 60000 }))
+export const getLeadTransitionsBatch = withAuth(withRateLimit(_getLeadTransitionsBatch, { maxRequests: 50, windowMs: 60000 }))
 export const deletePropertyLead = withAuth(withRateLimit(_deletePropertyLead, { maxRequests: 10, windowMs: 60000 }))
 export const archivePropertyLead = withAuth(withRateLimit(_archivePropertyLead, { maxRequests: 20, windowMs: 60000 }))
 

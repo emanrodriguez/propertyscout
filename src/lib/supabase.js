@@ -15,6 +15,7 @@ export {
   getValidTransitions,
   setPropertyLeadStatus,
   getAllStatusOptions,
+  getLeadTransitionsBatch,
   deletePropertyLead,
   LEAD_STATUS_VALUES,
   ACTIVE_STATUS_VALUES

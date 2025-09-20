@@ -6,8 +6,9 @@ import ImageCarousel from './ImageCarousel'
 import StatusDropdown from './StatusDropdown'
 import ListingsGrid from './ListingsGrid'
 import { format_number, createPhoneCallLink, createSMSLink, isValidPhoneNumber, format_dre } from '../lib/generic_functions'
+import { StatusTransitionsProvider, useStatusTransitions } from '../contexts/StatusTransitionsContext'
 
-const PropertyLeads = () => {
+const PropertyLeadsContent = () => {
   const [activeTab, setActiveTab] = useState('active')
   const [leads, setLeads] = useState([])
   const [pagination, setPagination] = useState({
@@ -24,6 +25,7 @@ const PropertyLeads = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [currentLead, setCurrentLead] = useState(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const { loadTransitionsForLeads } = useStatusTransitions()
 
   useEffect(() => {
     loadLeads(activeTab, 1, statusFilter) // Reset to page 1 when tab or filter changes
@@ -71,9 +73,17 @@ const PropertyLeads = () => {
       result = await secureGetLeads(options)
 
       if (result.success) {
-        setLeads(result.data.leads || result.data) // Handle both new and old response formats
+        const leadsData = result.data.leads || result.data // Handle both new and old response formats
+        setLeads(leadsData)
         if (result.data.pagination) {
           setPagination(result.data.pagination)
+        }
+
+        // Load status transitions for all leads in batch
+        if (leadsData && leadsData.length > 0) {
+          const leadIds = leadsData.map(lead => lead.id)
+          console.log('PropertyLeads: Loading transitions for', leadIds.length, 'leads:', leadIds)
+          loadTransitionsForLeads(leadIds)
         }
       } else {
         const errorMessage = result.error?.message || 'Failed to load property leads'
@@ -495,6 +505,14 @@ const PropertyLeads = () => {
         onSMSComplete={handleSMSComplete}
       />
     </div>
+  )
+}
+
+const PropertyLeads = () => {
+  return (
+    <StatusTransitionsProvider>
+      <PropertyLeadsContent />
+    </StatusTransitionsProvider>
   )
 }
 
