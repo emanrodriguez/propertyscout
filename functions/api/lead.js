@@ -26,6 +26,7 @@ const isValidUUID = (uuid) => {
 }
 
 // PATCH /api/lead/:lead_id/archive
+// Also support PUT method for better compatibility
 app.patch('/api/lead/:lead_id/archive', async (c) => {
   try {
     const leadId = c.req.param('lead_id')
@@ -108,6 +109,96 @@ app.patch('/api/lead/:lead_id/archive', async (c) => {
 
   } catch (error) {
     console.error('Error in PATCH /api/lead/archive:', error)
+    return c.json({
+      success: false,
+      error: 'Internal server error'
+    }, 500)
+  }
+})
+
+// PUT /api/lead/:lead_id/archive (alternative method for compatibility)
+app.put('/api/lead/:lead_id/archive', async (c) => {
+  try {
+    const leadId = c.req.param('lead_id')
+
+    // Validate lead_id parameter
+    if (!leadId || !isValidUUID(leadId)) {
+      return c.json({
+        success: false,
+        error: 'Invalid or missing lead_id parameter'
+      }, 400)
+    }
+
+    // Get authorization header
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({
+        success: false,
+        error: 'Missing or invalid authorization header'
+      }, 401)
+    }
+
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+    const supabase = getSupabaseClient()
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      return c.json({
+        success: false,
+        error: 'Invalid or expired token'
+      }, 401)
+    }
+
+    // Create a client with the user's session for RLS
+    const userSupabase = createClient(
+      process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
+      process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    )
+
+    // Update the lead to set is_active = false (archive)
+    const { data, error } = await userSupabase
+      .from('property_leads')
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', leadId)
+      .eq('user_id', user.id)
+      .select()
+
+    if (error) {
+      console.error('Supabase error in archive lead:', error)
+      return c.json({
+        success: false,
+        error: `Failed to archive property lead: ${error.message}`
+      }, 500)
+    }
+
+    if (!data || data.length === 0) {
+      return c.json({
+        success: false,
+        error: 'Property lead not found or you do not have permission to archive it'
+      }, 404)
+    }
+
+    // Return success response
+    return c.json({
+      success: true,
+      message: 'Lead archived successfully',
+      data: data[0]
+    })
+
+  } catch (error) {
+    console.error('Error in PUT /api/lead/archive:', error)
     return c.json({
       success: false,
       error: 'Internal server error'
