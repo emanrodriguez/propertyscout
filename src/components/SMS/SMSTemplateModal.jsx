@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getMessageTemplates, getAllSMSDetails, safeAPICall } from '../../lib/supabase'
+import { getMessageTemplates, getAllSMSDetails } from '../../api/messaging'
+import { safeAPICall } from '../../api/index'
 
 const SMSTemplateModal = ({
   isOpen,

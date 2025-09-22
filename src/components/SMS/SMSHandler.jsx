@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import SMSTemplateModal from './SMSTemplateModal'
 import SMSPreviewModal from './SMSPreviewModal'
-import { getSMSDetails } from '../../lib/supabase'
+import { getSMSDetails } from '../../api/messaging'
 
 const SMSHandler = ({
   isTemplateModalOpen,

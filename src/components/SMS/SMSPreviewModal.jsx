@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { updatePropertyLeadMetadata, setPropertyLeadStatus, safeAPICall } from '../../lib/supabase'
+import { updatePropertyLeadMetadata, setPropertyLeadStatus } from '../../api/properties'
+import { safeAPICall } from '../../api/index'
 
 const SMSPreviewModal = ({
   isOpen,

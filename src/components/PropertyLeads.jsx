@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getPropertyLeads, safeAPICall, LEAD_STATUS_VALUES } from '../lib/supabase'
+import { getPropertyLeads, LEAD_STATUS_VALUES } from '../api/properties'
+import { safeAPICall } from '../api/index'
 import SMSHandler from './SMS/SMSHandler'
 import SMSButton from './SMS/SMSButton'
 import ImageCarousel from './ImageCarousel'

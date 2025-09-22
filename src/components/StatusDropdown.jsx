@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { getLeadTransitionsBatch, setPropertyLeadStatus, safeAPICall, LEAD_STATUS_VALUES } from '../lib/supabase'
+import { getLeadTransitionsBatch, setPropertyLeadStatus, LEAD_STATUS_VALUES } from '../api/properties'
+import { safeAPICall } from '../api/index'
 import { useStatusTransitions } from '../contexts/StatusTransitionsContext'
 
 // No longer using local cache - using StatusTransitionsContext instead

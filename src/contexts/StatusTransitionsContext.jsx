@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { getLeadTransitionsBatch, safeAPICall } from '../lib/supabase'
+import { getLeadTransitionsBatch } from '../api/properties'
+import { safeAPICall } from '../api/index'
 
 const StatusTransitionsContext = createContext()
 
