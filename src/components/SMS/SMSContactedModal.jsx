@@ -65,7 +65,8 @@ const SMSContactedModal = ({
 
   const handleStatusUpdate = async (updateStatus) => {
     if (!updateStatus) {
-      // User clicked "No" - just close the modal
+      // User clicked "No" - clear localStorage and close the modal
+      localStorage.removeItem(PENDING_SMS_KEY)
       onClose()
       return
     }
@@ -116,15 +117,21 @@ const SMSContactedModal = ({
           onStatusUpdate(workingLead.id, 'contacted')
         }
 
+        // Clear localStorage since status was successfully updated
+        localStorage.removeItem(PENDING_SMS_KEY)
         onClose()
       } else {
         console.error('Failed to update lead status:', statusResult.data?.error || statusResult.error)
         alert('Failed to update lead status. Please update manually.')
+        // Clear localStorage even on failure to prevent persistent modal
+        localStorage.removeItem(PENDING_SMS_KEY)
         onClose()
       }
     } catch (error) {
       console.error('Error updating lead status:', error)
       alert('An error occurred while updating lead status. Please update manually.')
+      // Clear localStorage even on error to prevent persistent modal
+      localStorage.removeItem(PENDING_SMS_KEY)
       onClose()
     } finally {
       setStatusUpdateLoading(false)
@@ -207,7 +214,10 @@ const SMSContactedModal = ({
 
         <div className="modal-footer">
           <button
-            onClick={() => onClose()}
+            onClick={() => {
+              localStorage.removeItem(PENDING_SMS_KEY)
+              onClose()
+            }}
             className="no-btn"
             disabled={statusUpdateLoading}
           >

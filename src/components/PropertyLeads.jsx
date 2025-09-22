@@ -166,11 +166,20 @@ const PropertyLeadsContent = () => {
           ? { ...lead, status: newStatus, updated_at: new Date().toISOString() }
           : lead
       )
+
+      // If we have a status filter active, filter out leads that no longer match
+      if (statusFilter && statusFilter !== newStatus) {
+        return updatedLeads.filter(lead => {
+          // Keep the lead if it matches the current filter OR if it's not the updated lead
+          return lead.id !== leadId || lead.status === statusFilter
+        })
+      }
+
       console.log('PropertyLeads: Lead status updated in local state')
       return updatedLeads
     })
 
-    // No need to reload - the status has been updated locally
+    // No need to reload - the status has been updated locally and filtered
   }
 
   const handleArchiveLead = async (leadId) => {

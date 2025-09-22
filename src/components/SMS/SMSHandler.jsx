@@ -87,6 +87,10 @@ const SMSHandler = ({
     setError('')
     setIsContactedModalOpen(false)
 
+    // Clear localStorage when closing modal
+    const PENDING_SMS_KEY = 'pendingSMSConfirmation'
+    localStorage.removeItem(PENDING_SMS_KEY)
+
     // Notify parent that SMS process is complete
     if (onSMSComplete) {
       onSMSComplete()
