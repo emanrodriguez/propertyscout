@@ -4,7 +4,43 @@
  */
 
 import { supabase } from '../lib/supabase'
-import { safeAPICall } from './index'
+
+/**
+ * Wrapper function for API calls with consistent error handling
+ * @param {Function} apiFunction - API function to call
+ * @param {string} context - Context description
+ * @returns {Function} Wrapped function
+ */
+const safeAPICall = (apiFunction, context) => {
+  return async (...args) => {
+    try {
+      const result = await apiFunction(...args)
+      return {
+        success: true,
+        data: result
+      }
+    } catch (error) {
+      const errorMessage = error?.message || 'An unexpected error occurred'
+      const errorCode = error?.code || 'UNKNOWN_ERROR'
+
+      console.error(`API Error in ${context}:`, {
+        message: errorMessage,
+        code: errorCode,
+        stack: error?.stack,
+        timestamp: new Date().toISOString()
+      })
+
+      return {
+        success: false,
+        error: {
+          message: errorMessage,
+          code: errorCode,
+          context
+        }
+      }
+    }
+  }
+}
 
 /**
  * Fetches all agents with their lead counts and statistics

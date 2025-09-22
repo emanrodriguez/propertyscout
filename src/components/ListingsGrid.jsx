@@ -40,7 +40,7 @@ const ListingsGrid = ({
       {leads.map((lead) => (
         <div key={lead.id} className="listing-card">
           {/* Property Image with Overlay Wrapper */}
-          <div className="card-image-wrapper" style={{ position: 'relative' }}>
+          <div className="card-image-wrapper" style={{ position: 'relative'}}>
             <div className="card-image-container" style={{ position: 'relative' }}>
               <ImageCarousel
                 imageUrls={
@@ -49,6 +49,8 @@ const ListingsGrid = ({
                   [lead.property?.image_url].filter(Boolean) ||
                   []
                 }
+                width="100%"
+                height="200px"
                 fallbackImage={getPlaceholderImage()}
                 alt={`Property at ${lead.property?.street_address}`}
                 className="card-image"

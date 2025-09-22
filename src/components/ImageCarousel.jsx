@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useCallback, useState } from 'react'
+import Slider from 'react-slick'
+import 'slick-carousel/slick/slick.css'
+import 'slick-carousel/slick/slick-theme.css'
+import ImageModal from './ImageModal'
 
 const ImageCarousel = ({
   imageUrls = [],
@@ -6,136 +10,61 @@ const ImageCarousel = ({
   height = 'auto',
   className = '',
   fallbackImage = null,
-  useInlineStyles = true
+  onImageClick = null,
+  alt = null,
+  enableEnlarge = true
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [touchStart, setTouchStart] = useState(null)
-  const [touchEnd, setTouchEnd] = useState(null)
   const [loadedImages, setLoadedImages] = useState(new Set())
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [dragOffset, setDragOffset] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
+  const [errorImages, setErrorImages] = useState(new Set())
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
-  // If no images provided, use fallback
-  const images = imageUrls.length > 0 ? imageUrls : [fallbackImage].filter(Boolean)
-  const hasMultipleImages = images.length > 1
+  const images = useMemo(() => {
+    const sanitizedImageUrls = (imageUrls || []).filter((u) => typeof u === 'string' && u.trim().length > 0)
+    const finalImages = sanitizedImageUrls.length > 0 ? sanitizedImageUrls : [fallbackImage].filter(Boolean)
+    console.log('ImageCarousel images:', { imageUrls, sanitizedImageUrls, finalImages })
+    return finalImages
+  }, [imageUrls, fallbackImage])
 
-  // Debug logging
-  useEffect(() => {
-    console.log('ImageCarousel received:', {
-      imageUrls,
-      imageUrlsLength: imageUrls?.length,
-      images,
-      imagesLength: images.length,
-      hasMultipleImages
-    })
-  }, [imageUrls, images, hasMultipleImages])
+  const handleImageLoad = useCallback((index) => {
+    setLoadedImages(prev => new Set([...prev, index]))
+  }, [])
 
-  // Preload current and next image
-  useEffect(() => {
-    if (images[currentIndex] && !loadedImages.has(currentIndex)) {
-      const img = new Image()
-      img.onload = () => {
-        setLoadedImages(prev => new Set([...prev, currentIndex]))
-      }
-      img.src = images[currentIndex]
-    }
-
-    // Preload next image
-    const nextIndex = (currentIndex + 1) % images.length
-    if (images[nextIndex] && !loadedImages.has(nextIndex)) {
-      const img = new Image()
-      img.onload = () => {
-        setLoadedImages(prev => new Set([...prev, nextIndex]))
-      }
-      img.src = images[nextIndex]
-    }
-  }, [currentIndex, images, loadedImages])
-
-  const goToNext = () => {
-    if (hasMultipleImages && !isTransitioning) {
-      setIsTransitioning(true)
-      setCurrentIndex((prev) => (prev + 1) % images.length)
-      setTimeout(() => setIsTransitioning(false), 300)
-    }
-  }
-
-  const goToPrev = () => {
-    if (hasMultipleImages && !isTransitioning) {
-      setIsTransitioning(true)
-      setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
-      setTimeout(() => setIsTransitioning(false), 300)
-    }
-  }
-
-  const goToIndex = (index) => {
-    if (hasMultipleImages && !isTransitioning && index !== currentIndex) {
-      setIsTransitioning(true)
-      setCurrentIndex(index)
-      setTimeout(() => setIsTransitioning(false), 300)
-    }
-  }
-
-  // Handle touch events for swipe with fluid drag
-  const handleTouchStart = (e) => {
-    if (!hasMultipleImages || isTransitioning) return
-
-    setTouchStart(e.targetTouches[0].clientX)
-    setTouchEnd(null)
-    setIsDragging(true)
-    setDragOffset(0)
-  }
-
-  const handleTouchMove = (e) => {
-    if (!hasMultipleImages || !touchStart || isTransitioning) return
-
-    const currentTouch = e.targetTouches[0].clientX
-    const distance = touchStart - currentTouch
-    const maxDrag = 100 // Maximum drag distance for visual feedback
-
-    // Limit drag distance and add some resistance
-    let limitedDistance = distance
-    if (Math.abs(distance) > maxDrag) {
-      limitedDistance = Math.sign(distance) * (maxDrag + (Math.abs(distance) - maxDrag) * 0.3)
-    }
-
-    setDragOffset(limitedDistance)
-    setTouchEnd(currentTouch)
-
-    // Only call preventDefault when allowed
-    if (Math.abs(distance) > 5 && e.cancelable) {
-      e.preventDefault()
-    }
-  }
-
-  const handleTouchEnd = (e) => {
-    if (!touchStart || touchEnd === null || !hasMultipleImages || isTransitioning) return
-
-    const distance = touchStart - touchEnd
-    const minSwipeDistance = 50
-    const threshold = Math.min(100, window.innerWidth * 0.2) // 20% of screen width or 100px max
-
-    setIsDragging(false)
-    setDragOffset(0)
-
-    if (Math.abs(distance) > minSwipeDistance && e.cancelable) {
-      e.preventDefault()
-    }
-
-    if (Math.abs(distance) > threshold) {
-      distance > 0 ? goToNext() : goToPrev()
-    }
-
-    // Reset touch values
-    setTouchStart(null)
-    setTouchEnd(null)
-  }
-
-  const handleImageError = (e) => {
-    if (fallbackImage) {
+  const handleImageError = useCallback((index, e) => {
+    if (fallbackImage && e?.target?.src !== fallbackImage) {
       e.target.src = fallbackImage
+      return
     }
-  }
+    setErrorImages(prev => new Set([...prev, index]))
+  }, [fallbackImage])
+
+  const handleImageClick = useCallback((index) => {
+    if (onImageClick) {
+      onImageClick(images[index])
+    } else if (enableEnlarge && images.length > 0) {
+      setCurrentSlide(index)
+      setIsModalOpen(true)
+    }
+  }, [onImageClick, enableEnlarge, images])
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false)
+  }, [])
+
+  const settings = useMemo(() => ({
+    dots: false,
+    infinite: images.length > 1,
+    speed: 300,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: images.length > 1,
+    lazyLoad: 'ondemand',
+    adaptiveHeight: false,
+    swipe: true,
+    touchMove: true,
+    draggable: true,
+    afterChange: (index) => setCurrentSlide(index)
+  }), [images.length])
 
   if (images.length === 0) {
     return <div className={`image-carousel-empty ${className}`} style={{ width, height }} />
@@ -144,72 +73,138 @@ const ImageCarousel = ({
   return (
     <div
       className={`image-carousel ${className}`}
-      style={{ width, height }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      style={{
+        width,
+        height,
+        minHeight: height === 'auto' ? '200px' : height,
+        backgroundColor: '#f5f5f5',
+        position: 'relative'
+      }}
     >
-      <div className="carousel-container">
-        <div
-          className={`carousel-track ${isTransitioning ? 'transitioning' : ''} ${isDragging ? 'dragging' : ''}`}
-          style={{
-            transform: `translateX(${-currentIndex * 100 + (isDragging ? -(dragOffset / 3) : 0)}%)`,
-            transition: isDragging ? 'none' : isTransitioning ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'transform 0.2s ease-out'
-          }}
-        >
-          {images.map((image, index) => (
+      <Slider {...settings}>
+        {images.map((image, index) => (
+          <div key={index} className="carousel-slide" style={{ position: 'relative' }}>
+            {!loadedImages.has(index) && !errorImages.has(index) && (
+              <div
+                className="carousel-placeholder"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: height === 'auto' ? '200px' : height,
+                  backgroundColor: '#f0f0f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1,
+                  backgroundImage: `
+                    linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent),
+                    linear-gradient(#f0f0f0 50%, transparent 50%)
+                  `,
+                  backgroundSize: '200px 100%, 20px 20px',
+                  animation: 'shimmer 1.5s infinite linear'
+                }}
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    border: '3px solid #ddd',
+                    borderTop: '3px solid #666',
+                    animation: 'spin 1s linear infinite'
+                  }}
+                />
+              </div>
+            )}
             <img
-              key={index}
               src={image}
-              alt={`Property ${index + 1}`}
+              alt={alt || `Property ${index + 1}`}
               className="carousel-image"
-              onError={handleImageError}
+              onError={(e) => handleImageError(index, e)}
+              onLoad={() => handleImageLoad(index)}
+              onClick={() => handleImageClick(index)}
               draggable={false}
               style={{
+                filter: loadedImages.has(index) ? 'none' : 'blur(5px)',
+                transition: 'filter 0.3s ease-out, opacity 0.3s ease-out',
                 opacity: loadedImages.has(index) ? 1 : 0.7,
-                transition: 'opacity 0.3s ease'
+                cursor: (onImageClick || enableEnlarge) ? 'pointer' : 'default'
               }}
             />
-          ))}
-        </div>
-      </div>
+          </div>
+        ))}
+      </Slider>
 
-      {hasMultipleImages && (
-        <>
-          <button
-            className="carousel-arrow carousel-arrow-left"
-            onClick={goToPrev}
-            aria-label="Previous image"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
-          </button>
+      <style>{`
+        .image-carousel {
+          width: 100%;
+          height: ${height === 'auto' ? '200px' : height};
+          min-width: 0;
+          flex: 1;
+          overflow: hidden;
+        }
 
-          <button
-            className="carousel-arrow carousel-arrow-right"
-            onClick={goToNext}
-            aria-label="Next image"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9,18 15,12 9,6"></polyline>
-            </svg>
-          </button>
+        .image-carousel .slick-slider {
+          height: 100%;
+        }
 
-          {images.length > 1 && (
-            <div className="carousel-indicators">
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  className={`carousel-dot ${index === currentIndex ? 'active' : ''}`}
-                  onClick={() => goToIndex(index)}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+        .image-carousel .slick-list {
+          height: 100%;
+        }
+
+        .image-carousel .slick-track {
+          height: 100%;
+          display: flex;
+          align-items: stretch;
+        }
+
+        .image-carousel .slick-slide {
+          height: 100%;
+        }
+
+        .image-carousel .slick-slide > div {
+          height: 100%;
+        }
+
+        .carousel-slide {
+          height: 100%;
+          width: 100%;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .carousel-image {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          display: block !important;
+        }
+
+        .carousel-placeholder {
+          width: 100% !important;
+          height: 100% !important;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: -200px 0, 0 0; }
+          100% { background-position: 200px 0, 0 0; }
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+
+      {/* Image Enlargement Modal */}
+      <ImageModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        imageUrls={images}
+        initialIndex={currentSlide}
+      />
     </div>
   )
 }

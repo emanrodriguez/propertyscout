@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import SMSTemplateModal from './SMSTemplateModal'
 import SMSPreviewModal from './SMSPreviewModal'
+import SMSContactedModal from './SMSContactedModal'
 import { getSMSDetails } from '../../api/messaging'
 
 const SMSHandler = ({
@@ -8,9 +9,11 @@ const SMSHandler = ({
   onCloseTemplateModal,
   onClosePreviewModal,
   currentLead,
-  onSMSComplete
+  onSMSComplete,
+  onStatusUpdate
 }) => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
+  const [isContactedModalOpen, setIsContactedModalOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [smsDetails, setSmsDetails] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -50,8 +53,48 @@ const SMSHandler = ({
     setIsPreviewModalOpen(false)
   }
 
+  const handlePreviewCloseWithoutClear = () => {
+    setError('')
+    setIsPreviewModalOpen(false)
+  }
+
+  const handleOpenContactedModal = () => {
+    console.log('Opening contacted modal, current state:', {
+      isPreviewModalOpen,
+      isContactedModalOpen,
+      smsDetails: !!smsDetails,
+      currentLead: !!currentLead,
+      currentLeadDetails: currentLead
+    })
+    // Close preview modal immediately and open contacted modal
+    setIsPreviewModalOpen(false)
+    setIsContactedModalOpen(true)
+
+    // Add a timeout to check state after update
+    setTimeout(() => {
+      console.log('After state update:', {
+        isContactedModalOpen: true, // should be true
+        isPreviewModalOpen: false, // should be false
+        smsDetails: !!smsDetails,
+        currentLead: !!currentLead
+      })
+    }, 50)
+  }
+
+  const handleContactedModalClose = () => {
+    setSmsDetails(null)
+    setSelectedTemplate(null)
+    setError('')
+    setIsContactedModalOpen(false)
+
+    // Notify parent that SMS process is complete
+    if (onSMSComplete) {
+      onSMSComplete()
+    }
+  }
+
   const handleSMSSent = () => {
-    // Notify parent that SMS was actually sent
+    // This will be called from the SMSContactedModal
     if (onSMSComplete) {
       onSMSComplete()
     }
@@ -69,11 +112,22 @@ const SMSHandler = ({
       <SMSPreviewModal
         isOpen={isPreviewModalOpen && !!smsDetails}
         onClose={handlePreviewClose}
+        onCloseWithoutClear={handlePreviewCloseWithoutClear}
         onBack={handleBackToTemplates}
         smsDetails={smsDetails}
         lead={currentLead}
         template={selectedTemplate}
+        onOpenContactedModal={handleOpenContactedModal}
+      />
+
+      <SMSContactedModal
+        isOpen={isContactedModalOpen && !!smsDetails}
+        onClose={handleContactedModalClose}
+        smsDetails={smsDetails}
+        lead={currentLead}
+        template={selectedTemplate}
         onSMSSent={handleSMSSent}
+        onStatusUpdate={onStatusUpdate}
       />
 
       {error && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getPropertyLeads, LEAD_STATUS_VALUES } from '../api/properties'
 import { safeAPICall } from '../api/index'
 import SMSHandler from './SMS/SMSHandler'
+import PendingSMSModal from './SMS/PendingSMSModal'
 import SMSButton from './SMS/SMSButton'
 import ImageCarousel from './ImageCarousel'
 import StatusDropdown from './StatusDropdown'
@@ -150,18 +151,24 @@ const PropertyLeadsContent = () => {
   }
 
   const handleSMSComplete = () => {
-    loadLeads(activeTab, pagination.page, statusFilter)
+    // Only reload if we haven't already updated the status via onStatusUpdate
+    // This prevents unnecessary refetches when status was successfully updated
+    console.log('PropertyLeads: SMS complete - status should already be updated via onStatusUpdate callback')
   }
 
   const handleStatusUpdate = (leadId, newStatus) => {
+    console.log('PropertyLeads: handleStatusUpdate called for lead', leadId, 'new status:', newStatus)
+
     // Update the local state to reflect the status change
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
+    setLeads(prevLeads => {
+      const updatedLeads = prevLeads.map(lead =>
         lead.id === leadId
           ? { ...lead, status: newStatus, updated_at: new Date().toISOString() }
           : lead
       )
-    )
+      console.log('PropertyLeads: Lead status updated in local state')
+      return updatedLeads
+    })
 
     // No need to reload - the status has been updated locally
   }
@@ -173,22 +180,12 @@ const PropertyLeadsContent = () => {
 
     try {
       const { archivePropertyLead } = await import('../api/properties')
-      const result = await archivePropertyLead(leadId)
+      const secureArchiveLead = safeAPICall(archivePropertyLead, 'PropertyLeads.handleArchiveLead')
+      const result = await secureArchiveLead(leadId)
 
       if (result.success) {
-        if (activeTab === 'active') {
-          // Remove from active tab view since it's now archived
-          setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId))
-        } else {
-          // Update the lead in local state to set is_active = false
-          setLeads(prevLeads =>
-            prevLeads.map(lead =>
-              lead.id === leadId
-                ? { ...lead, is_active: false, updated_at: new Date().toISOString() }
-                : lead
-            )
-          )
-        }
+        // Always remove from current view when archived, regardless of tab
+        setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId))
       } else {
         throw new Error(result.error || 'Failed to archive lead')
       }
@@ -204,8 +201,9 @@ const PropertyLeadsContent = () => {
     }
 
     try {
-      const { deletePropertyLead } = await import('../lib/supabase')
-      const result = await deletePropertyLead(leadId)
+      const { deletePropertyLead } = await import('../api/properties')
+      const secureDeleteLead = safeAPICall(deletePropertyLead, 'PropertyLeads.handleDeleteLead')
+      const result = await secureDeleteLead(leadId)
 
       if (result.success) {
         // Remove the lead from local state
@@ -504,7 +502,11 @@ const PropertyLeadsContent = () => {
         onClosePreviewModal={handleClosePreviewModal}
         currentLead={currentLead}
         onSMSComplete={handleSMSComplete}
+        onStatusUpdate={handleStatusUpdate}
       />
+
+      {/* This modal checks for pending SMS confirmations on page load */}
+      <PendingSMSModal />
     </div>
   )
 }

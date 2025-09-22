@@ -29,7 +29,7 @@ export const StatusTransitionsProvider = ({ children }) => {
       return // All requested transitions are already cached or loading
     }
 
-    console.log('StatusTransitionsContext: Loading batch for', uncachedLeadIds.length, 'leads')
+    // console.log('StatusTransitionsContext: Loading batch for', uncachedLeadIds.length, 'leads')
 
     // Mark these lead IDs as loading
     setLoadingLeadIds(prev => {
@@ -48,13 +48,13 @@ export const StatusTransitionsProvider = ({ children }) => {
 
         // Add each lead's transitions to the cache
         Object.entries(result.data).forEach(([leadId, transitions]) => {
-          console.log('StatusTransitionsContext: Mapping lead', leadId, 'to', transitions.length, 'transitions')
+          // console.log('StatusTransitionsContext: Mapping lead', leadId, 'to', transitions.length, 'transitions')
           newTransitions.set(leadId, transitions)
         })
 
         setTransitionsCache(newTransitions)
-        console.log('StatusTransitionsContext: Loaded transitions for', Object.keys(result.data).length, 'leads')
-        console.log('StatusTransitionsContext: Total cache size now:', newTransitions.size)
+        // console.log('StatusTransitionsContext: Loaded transitions for', Object.keys(result.data).length, 'leads')
+        // console.log('StatusTransitionsContext: Total cache size now:', newTransitions.size)
       } else {
         console.error('Failed to load status transitions batch:', result.error)
       }
@@ -73,7 +73,7 @@ export const StatusTransitionsProvider = ({ children }) => {
 
   const getTransitionsForLead = useCallback((leadId) => {
     const transitions = transitionsCache.get(leadId) || null
-    console.log('StatusTransitionsContext: Getting transitions for lead', leadId, 'found:', transitions ? transitions.length : 'none')
+    // console.log('StatusTransitionsContext: Getting transitions for lead', leadId, 'found:', transitions ? transitions.length : 'none')
     return transitions
   }, [transitionsCache])
 

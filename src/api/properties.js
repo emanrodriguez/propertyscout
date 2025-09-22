@@ -413,8 +413,8 @@ const getMockPropertyLeads = (status) => {
 }
 
 /**
- * Internal function to delete a property lead
- * @param {Object} user - Authenticated user object
+ * Internal function to delete a property lead via API endpoint
+ * @param {Object} user - Authenticated user object (used for session token)
  * @param {string} leadId - Lead ID to delete
  * @returns {Promise<Object>} Success/error response
  */
@@ -422,16 +422,33 @@ const _deletePropertyLead = async (user, leadId) => {
   const validLeadId = validateInput.uuid(leadId, true)
 
   try {
-    const { data, error } = await supabase.rpc('delete_property_lead', {
-      p_lead_id: validLeadId
-    })
+    // Get the current session to obtain the access token
+    const { data: { session } } = await supabase.auth.getSession()
 
-    if (error) {
-      console.error('Supabase RPC error in deletePropertyLead:', error)
-      throw new Error(`Failed to delete property lead: ${error.message}`)
+    if (!session?.access_token) {
+      throw new Error('No valid session found')
     }
 
-    return { success: true, data }
+    // Call the API endpoint
+    const response = await fetch(`/api/lead/${validLeadId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`)
+    }
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete property lead')
+    }
+
+    return { success: true, data: result.data }
   } catch (error) {
     console.error('Error in _deletePropertyLead:', error)
     throw error
@@ -439,8 +456,8 @@ const _deletePropertyLead = async (user, leadId) => {
 }
 
 /**
- * Internal function to archive a property lead (set is_active to false)
- * @param {Object} user - Authenticated user object
+ * Internal function to archive a property lead via API endpoint
+ * @param {Object} user - Authenticated user object (used for session token)
  * @param {string} leadId - Lead ID to archive
  * @returns {Promise<Object>} Success/error response
  */
@@ -448,26 +465,33 @@ const _archivePropertyLead = async (user, leadId) => {
   const validLeadId = validateInput.uuid(leadId, true)
 
   try {
-    const { data, error } = await supabase
-      .from('property_leads')
-      .update({
-        is_active: false,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', validLeadId)
-      .eq('user_id', user.id)
-      .select()
+    // Get the current session to obtain the access token
+    const { data: { session } } = await supabase.auth.getSession()
 
-    if (error) {
-      console.error('Supabase error in archivePropertyLead:', error)
-      throw new Error(`Failed to archive property lead: ${error.message}`)
+    if (!session?.access_token) {
+      throw new Error('No valid session found')
     }
 
-    if (!data || data.length === 0) {
-      throw new Error('Property lead not found or you do not have permission to archive it')
+    // Call the API endpoint
+    const response = await fetch(`/api/lead/${validLeadId}/archive`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP error! status: ${response.status}`)
     }
 
-    return { success: true, data: data[0] }
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to archive property lead')
+    }
+
+    return { success: true, data: result.data }
   } catch (error) {
     console.error('Error in _archivePropertyLead:', error)
     throw error

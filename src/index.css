@@ -1365,7 +1365,8 @@ body {
 
 .card-image-wrapper {
   position: relative;
-  overflow: hidden;               /* no nested scroll in the image area */
+  overflow: hidden;   
+  width: 400px;            /* no nested scroll in the image area */
 }
 
 .card-image-container {
