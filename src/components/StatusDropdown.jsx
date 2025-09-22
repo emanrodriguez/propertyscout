@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadTransitionsBatch, setPropertyLeadStatus, safeAPICall } from '../lib/supabase'
+import { createPortal } from 'react-dom'
+import { getLeadTransitionsBatch, setPropertyLeadStatus, safeAPICall, LEAD_STATUS_VALUES } from '../lib/supabase'
 import { useStatusTransitions } from '../contexts/StatusTransitionsContext'
 
 // No longer using local cache - using StatusTransitionsContext instead
@@ -101,25 +102,51 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
     const transitions = getTransitionsForLead(lead.id)
     const isLoading = isLeadLoading(lead.id)
 
-    if (transitions && transitions.length > 0) {
+    if (transitions !== null) { // We have batch data (could be empty array or populated)
       console.log('StatusDropdown: Using batch data for lead', lead.id, 'transitions:', transitions)
 
-      // Convert the transitions format to match the expected format
-      const options = transitions.map(transition => ({
-        to_status: transition.to_status,
-        weight: transition.weight,
-        description: transition.description,
-        isValid: true // All transitions from the batch call are valid
-      }))
+      // Create a map of valid transitions with their weights
+      const transitionMap = new Map()
+      if (transitions && transitions.length > 0) {
+        transitions.forEach(t => {
+          transitionMap.set(t.to_status, {
+            weight: t.weight,
+            description: t.description,
+            isValid: true
+          })
+        })
+      }
 
-      console.log('StatusDropdown: Converted options for lead', lead.id, ':', options)
-      setStatusOptions(options)
+      // Get all possible status values except the current status
+      const allStatuses = LEAD_STATUS_VALUES.filter(status => status !== lead.status)
+
+      // Create options for all statuses
+      const options = allStatuses.map(status => {
+        const transition = transitionMap.get(status)
+        return {
+          to_status: status,
+          weight: transition?.weight || 0,
+          description: transition?.description || 'Manual status change',
+          isValid: transition?.isValid || false
+        }
+      })
+
+      // Sort by weight (valid transitions first, then invalid ones)
+      const sortedOptions = options.sort((a, b) => {
+        if (a.isValid && !b.isValid) return -1
+        if (!a.isValid && b.isValid) return 1
+        return b.weight - a.weight
+      })
+
+      console.log('StatusDropdown: Converted options for lead', lead.id, ':', sortedOptions)
+      setStatusOptions(sortedOptions)
       setLoading(false) // Clear loading state since we have data
 
-      // Set the suggested status (first transition with highest weight)
-      if (options.length > 0) {
-        setSuggestedStatus(options[0].to_status)
-        setSuggestionWeight(options[0].weight)
+      // Set the suggested status (first valid transition with highest weight)
+      const validTransitions = sortedOptions.filter(option => option.isValid)
+      if (validTransitions.length > 0) {
+        setSuggestedStatus(validTransitions[0].to_status)
+        setSuggestionWeight(validTransitions[0].weight)
       } else {
         setSuggestedStatus(null)
         setSuggestionWeight(null)
@@ -149,19 +176,47 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
         console.log('StatusDropdown: Fallback batch data received', result.data[lead.id])
 
         const transitions = result.data[lead.id]
-        const options = transitions.map(transition => ({
-          to_status: transition.to_status,
-          weight: transition.weight,
-          description: transition.description,
-          isValid: true
-        }))
 
-        setStatusOptions(options)
+        // Create a map of valid transitions with their weights
+        const transitionMap = new Map()
+        if (transitions && transitions.length > 0) {
+          transitions.forEach(t => {
+            transitionMap.set(t.to_status, {
+              weight: t.weight,
+              description: t.description,
+              isValid: true
+            })
+          })
+        }
 
-        // Set the suggested status (first transition with highest weight)
-        if (options.length > 0) {
-          setSuggestedStatus(options[0].to_status)
-          setSuggestionWeight(options[0].weight)
+        // Get all possible status values except the current status
+        const allStatuses = LEAD_STATUS_VALUES.filter(status => status !== lead.status)
+
+        // Create options for all statuses
+        const options = allStatuses.map(status => {
+          const transition = transitionMap.get(status)
+          return {
+            to_status: status,
+            weight: transition?.weight || 0,
+            description: transition?.description || 'Manual status change',
+            isValid: transition?.isValid || false
+          }
+        })
+
+        // Sort by weight (valid transitions first, then invalid ones)
+        const sortedOptions = options.sort((a, b) => {
+          if (a.isValid && !b.isValid) return -1
+          if (!a.isValid && b.isValid) return 1
+          return b.weight - a.weight
+        })
+
+        setStatusOptions(sortedOptions)
+
+        // Set the suggested status (first valid transition with highest weight)
+        const validTransitions = sortedOptions.filter(option => option.isValid)
+        if (validTransitions.length > 0) {
+          setSuggestedStatus(validTransitions[0].to_status)
+          setSuggestionWeight(validTransitions[0].weight)
         } else {
           setSuggestedStatus(null)
           setSuggestionWeight(null)
@@ -318,8 +373,8 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
         </div>
       )}
 
-      {/* Mobile Overlay */}
-      {isOpen && isMobile && (
+      {/* Mobile Overlay - using portal to avoid clipping */}
+      {isOpen && isMobile && createPortal(
         <div className="status-dropdown-mobile-overlay"
           onClick={(e) => {
             e.preventDefault()
@@ -392,7 +447,8 @@ const StatusDropdown = ({ lead, onStatusUpdate }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

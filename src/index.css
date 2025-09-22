@@ -1589,7 +1589,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 1900;
+  z-index: 2200;
   animation: fadeIn 0.2s ease;
 }
 
@@ -2098,6 +2098,505 @@ body {
 .send-sms-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* SMS Status Confirmation */
+.status-confirmation-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.confirmation-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.status-confirmation-content h4 {
+  color: #28a745;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.status-confirmation-content p {
+  color: #6c757d;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.lead-info {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 14px;
+}
+
+.yes-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  flex: 1;
+}
+
+.yes-btn:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.yes-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.no-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  flex: 1;
+}
+
+.no-btn:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.no-btn:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Directory Styles */
+.directory-container {
+  padding: 20px;
+}
+
+.directory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.directory-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.directory-tabs {
+  display: flex;
+  gap: 8px;
+  background: white;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.tab-button {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.3s;
+}
+
+.tab-button:hover {
+  background: #f8f9fa;
+}
+
+.tab-button.active {
+  background: #0066cc;
+  color: white;
+}
+
+.directory-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-controls label {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.sort-select {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+/* Agents Directory */
+.agents-stats,
+.brokers-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+.agents-grid,
+.brokers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.agent-card,
+.broker-card {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  transition: box-shadow 0.3s;
+}
+
+.agent-card:hover,
+.broker-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.agent-header,
+.broker-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.agent-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0066cc, #004494);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  overflow: hidden;
+}
+
+.agent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.broker-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0066cc;
+}
+
+.broker-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.agent-info,
+.broker-info {
+  flex: 1;
+}
+
+.agent-name,
+.broker-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 4px 0;
+}
+
+.agent-license {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.broker-phone {
+  font-size: 14px;
+  margin: 0;
+}
+
+.phone-link,
+.email-link {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.phone-link:hover,
+.email-link:hover {
+  text-decoration: underline;
+}
+
+.agent-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.detail-label {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #212529;
+}
+
+.agent-stats,
+.broker-stats-row {
+  display: flex;
+  gap: 20px;
+  padding: 12px 0;
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.agent-stats .stat,
+.broker-stats-row .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.broker-agents {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
+}
+
+.broker-agents h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c757d;
+  margin: 0 0 8px 0;
+}
+
+.agents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-agent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.agent-name {
+  color: #212529;
+  font-weight: 500;
+}
+
+.agent-leads {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.more-agents {
+  padding: 8px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.broker-activity,
+.activity-label {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.activity-value {
+  color: #212529;
+  font-weight: 500;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 16px;
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-message {
+  color: #dc3545;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  padding: 8px 16px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.retry-btn:hover {
+  background: #004494;
+}
+
+@media (max-width: 768px) {
+  .directory-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .directory-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-container {
+    max-width: none;
+    width: 100%;
+  }
+
+  .agents-grid,
+  .brokers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agents-stats,
+  .brokers-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* SMS Error Toast */

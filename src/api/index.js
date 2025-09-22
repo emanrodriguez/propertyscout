@@ -6,6 +6,7 @@
 export * from './auth'
 export * from './properties'
 export * from './messaging'
+export * from './agents'
 
 /**
  * Global error handler for API calls

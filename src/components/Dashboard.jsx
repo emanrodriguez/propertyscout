@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Sidebar from './Sidebar'
 import PropertyLeads from './PropertyLeads'
+import Directory from './Directory/Directory'
 
 const Dashboard = ({ user, onSignOut }) => {
   const location = useLocation()
@@ -16,6 +17,8 @@ const Dashboard = ({ user, onSignOut }) => {
     const path = location.pathname
     if (path === '/listings/leads') {
       setActiveSection('listings/leads')
+    } else if (path.startsWith('/directory')) {
+      setActiveSection('directory')
     } else if (path === '/dashboard') {
       setActiveSection('dashboard')
     }
@@ -26,6 +29,8 @@ const Dashboard = ({ user, onSignOut }) => {
     setActiveSection(section)
     if (section === 'listings/leads') {
       navigate('/listings/leads')
+    } else if (section === 'directory') {
+      navigate('/directory/agents')
     } else if (section === 'dashboard') {
       navigate('/dashboard')
     }
@@ -71,6 +76,8 @@ const Dashboard = ({ user, onSignOut }) => {
         )
       case 'listings/leads':
         return <PropertyLeads />
+      case 'directory':
+        return <Directory />
       default:
         return (
           <div>
@@ -87,17 +94,24 @@ const Dashboard = ({ user, onSignOut }) => {
         return 'Dashboard'
       case 'listings/leads':
         return 'Property Leads'
+      case 'directory':
+        return 'Directory'
       default:
         return 'Dashboard'
     }
   }
 
   const getBreadcrumb = () => {
+    const path = location.pathname
     switch (activeSection) {
       case 'dashboard':
         return 'Dashboard'
       case 'listings/leads':
         return 'Listings / Leads'
+      case 'directory':
+        if (path === '/directory/agents') return 'Directory / Agents'
+        if (path === '/directory/brokers') return 'Directory / Brokers'
+        return 'Directory'
       default:
         return 'Dashboard'
     }

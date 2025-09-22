@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { updatePropertyLeadMetadata, safeAPICall } from '../../lib/supabase'
+import { useState, useEffect } from 'react'
+import { updatePropertyLeadMetadata, setPropertyLeadStatus, safeAPICall } from '../../lib/supabase'
 
 const SMSPreviewModal = ({
   isOpen,
@@ -11,6 +11,16 @@ const SMSPreviewModal = ({
   onSMSSent
 }) => {
   const [loading, setLoading] = useState(false)
+  const [showStatusConfirmation, setShowStatusConfirmation] = useState(false)
+  const [statusUpdateLoading, setStatusUpdateLoading] = useState(false)
+
+  // Reset confirmation state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowStatusConfirmation(false)
+      setStatusUpdateLoading(false)
+    }
+  }, [isOpen])
 
   const formatPhoneForDisplay = (phoneNumber) => {
     // Convert 17604076444 to (760) 407-6444
@@ -57,9 +67,9 @@ const SMSPreviewModal = ({
         onSMSSent()
       }
 
-      // Show success and close modal
+      // Show status confirmation screen instead of closing immediately
       setTimeout(() => {
-        onClose()
+        setShowStatusConfirmation(true)
       }, 1000)
 
     } catch (error) {
@@ -69,8 +79,48 @@ const SMSPreviewModal = ({
     }
   }
 
+  const handleStatusUpdate = async (updateStatus) => {
+    if (!updateStatus) {
+      // User clicked "No" - just close the modal
+      setShowStatusConfirmation(false)
+      onClose()
+      return
+    }
+
+    // User clicked "Yes" - update status to "contacted"
+    setStatusUpdateLoading(true)
+
+    try {
+      const secureSetStatus = safeAPICall(setPropertyLeadStatus, 'SMSPreviewModal.updateStatus')
+      const result = await secureSetStatus(lead.id, 'contacted')
+
+      if (result.success && result.data.success) {
+        console.log('Successfully updated lead status to contacted')
+        // Close the modal after successful status update
+        setShowStatusConfirmation(false)
+        onClose()
+      } else {
+        console.error('Failed to update lead status:', result.data?.error || result.error)
+        alert('Failed to update lead status. Please update manually.')
+        setShowStatusConfirmation(false)
+        onClose()
+      }
+    } catch (error) {
+      console.error('Error updating lead status:', error)
+      alert('An error occurred while updating lead status. Please update manually.')
+      setShowStatusConfirmation(false)
+      onClose()
+    } finally {
+      setStatusUpdateLoading(false)
+    }
+  }
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
+      if (showStatusConfirmation) {
+        // Don't close on overlay click during status confirmation
+        return
+      }
       onClose()
     }
   }
@@ -80,15 +130,62 @@ const SMSPreviewModal = ({
   return (
     <div className="sms-preview-overlay" onClick={handleOverlayClick}>
       <div className="sms-preview-modal">
-        <div className="modal-header">
-          <h3>SMS Preview</h3>
-          <button className="close-btn" onClick={onClose}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
+        {showStatusConfirmation ? (
+          <>
+            <div className="modal-header">
+              <h3>Update Status?</h3>
+            </div>
+
+            <div className="modal-content">
+              <div className="status-confirmation-content">
+                <div className="confirmation-icon">
+                  ✅
+                </div>
+                <h4>SMS Sent Successfully!</h4>
+                <p>Mark this lead as "Contacted"?</p>
+                <div className="lead-info">
+                  <strong>{lead.property?.street_address}</strong>
+                  <br />
+                  {lead.agent?.full_name}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                onClick={() => handleStatusUpdate(false)}
+                className="no-btn"
+                disabled={statusUpdateLoading}
+              >
+                No, Keep Current Status
+              </button>
+              <button
+                onClick={() => handleStatusUpdate(true)}
+                className="yes-btn"
+                disabled={statusUpdateLoading}
+              >
+                {statusUpdateLoading ? (
+                  <>
+                    <div className="spinner small"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Yes, Mark as Contacted'
+                )}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="modal-header">
+              <h3>SMS Preview</h3>
+              <button className="close-btn" onClick={onClose}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
 
         <div className="modal-content">
           <div className="phone-info">
@@ -158,6 +255,8 @@ const SMSPreviewModal = ({
             )}
           </button>
         </div>
+          </>
+        )}
       </div>
     </div>
   )

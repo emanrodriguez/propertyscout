@@ -83,6 +83,36 @@ function App() {
           }
         />
         <Route
+          path="/directory"
+          element={
+            session ? (
+              <Dashboard user={session.user} onSignOut={handleSignOut} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/directory/agents"
+          element={
+            session ? (
+              <Dashboard user={session.user} onSignOut={handleSignOut} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/directory/brokers"
+          element={
+            session ? (
+              <Dashboard user={session.user} onSignOut={handleSignOut} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
           path="/auth/callback"
           element={<AuthCallback />}
         />
